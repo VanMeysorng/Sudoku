@@ -82,7 +82,7 @@ def generate_sudoku(difficulty='easy'):
 
     return board
 
-def display_board(board, editable=False):
+def display_board(board):
     cell_style = """
     <style>
     .sudoku-cell {
@@ -92,14 +92,6 @@ def display_board(board, editable=False):
         text-align: center;
         width: 70px;
         height: 70px;
-        box-sizing: border-box;
-    }
-    .sudoku-cell input {
-        font-size: 18px;
-        text-align: center;
-        padding: 0;
-        margin: 0;
-        height: 100%;
         box-sizing: border-box;
     }
     .sudoku-row {
@@ -134,16 +126,14 @@ def display_board(board, editable=False):
             if i % 3 == 0 and i != 0:
                 border_classes += " thick-border-top"
 
-            if editable and num == 0:
-                cell_html = f'<input type="number" class="{border_classes}" min="0" max="9" style="width:70px;height:70px;text-align:center;" key="{i},{j}">'
+            if num != 0:
+                cell_html = f'<div class="{border_classes}">{num}</div>'
             else:
-                if num != 0:
-                    cell_html = f'<div class="{border_classes}">{num}</div>'
-                else:
-                    cell_html = f'<div class="{border_classes}">.</div>'
+                cell_html = f'<div class="{border_classes}">.</div>'
             row_html += cell_html
         row_html += '</div>'
         st.markdown(row_html, unsafe_allow_html=True)
+
 def main():
     st.title("Sudoku Game with Streamlit")
 
@@ -234,8 +224,26 @@ def main():
 
         if st.session_state.board is not None:
             st.write("<div style='margin: 0 auto; width: max-content;'>", unsafe_allow_html=True)
-            display_board(st.session_state.board, editable=True)
+            display_board(st.session_state.board)
             st.write("</div>", unsafe_allow_html=True)
+
+            # Form to update cell values
+            with st.form(key='update_form'):
+                row = st.number_input("Row (0-8)", min_value=0, max_value=8, step=1)
+                col = st.number_input("Column (0-8)", min_value=0, max_value=8, step=1)
+                num = st.number_input("Number (1-9)", min_value=1, max_value=9, step=1)
+                update_button = st.form_submit_button("Update Cell")
+                
+                if update_button:
+                    if st.session_state.board[row][col] == 0:
+                        if is_valid(st.session_state.board, row, col, num):
+                            st.session_state.board[row][col] = num
+                            st.session_state.moves.append((row, col))
+                            st.experimental_rerun()
+                        else:
+                            st.error("Invalid move! Number conflicts with existing numbers.")
+                    else:
+                        st.error("Cell is not editable.")
 
             if st.session_state.solution is not None:
                 st.write("Solved Sudoku Board:")
